@@ -53,6 +53,15 @@ const lgtv = require('lgtv2')({
 
 lgtv.on('connect', () => {
   console.log('Connected to LG TV')
+
+  lgtv.getSocket('ssap://com.webos.service.networkinput/getPointerInputSocket', (err, socket) => {
+    if (err) {
+      console.error('Error establishing pointer socket:', err);
+      return;
+    }
+    pointerSocket = socket;
+    console.log('Connected to pointer input socket', pointerSocket);
+  });
 })
 
 lgtv.on('error', (err) => {
@@ -62,6 +71,9 @@ lgtv.on('error', (err) => {
 const app = express()
 const PORT = 9112 // Choose any port you prefer
 app.use(express.json())
+
+// Establishing a socket connection for pointer events
+let pointerSocket = null
 
 // Increase volume
 app.post('/volume/up', (req, res) => {
@@ -97,6 +109,7 @@ app.post('/volume/set/:level', (req, res) => {
   })
 })
 
+// Send a toast message
 app.post('/toast', (req, res) => {
   console.log('req', req.body.toastMessage)
   lgtv.request('ssap://system.notifications/createToast', { message: req.body.toastMessage }, (err) => {
@@ -110,6 +123,56 @@ app.post('/toast', (req, res) => {
       success: true,
       msg: 'Toast shown'
     })
+  })
+})
+
+app.post('/pointer-features', (req, res) => {
+  const { type, x, y, key } = req.body;
+  
+  if (!pointerSocket) {
+    return res.status(500).send({
+      success: false,
+      msg: 'Pointer socket not initialized'
+    })
+  }
+
+  // Assuming you have a predefined set of events you want to handle, e.g., move, click, etc.
+  switch (type) {
+    case 'move':
+      pointerSocket.send('move', { dx: x, dy: y })
+      break
+    case 'click':
+      switch (key) {
+        case "UP":
+        case "DOWN":
+        case "LEFT":
+        case "RIGHT":
+        case "MENU":
+        case "ENTER":
+        case "MUTE":
+        case "BACK": {
+          pointerSocket.send('button', { name: key }) // key: "DOWN" | "MENU" | "BACK"
+          break
+        }
+        default: {
+          return res.status(400).send({
+            success: false,
+            msg: 'Invalid pointer event key'
+          })
+        }
+      }
+      break
+    // Handle other values of `type`
+    default:
+      return res.status(400).send({
+        success: false,
+        msg: 'Invalid pointer event type'
+      })
+  }
+
+  res.send({
+    success: true,
+    msg: `Pointer event (${type}) sent to LG TV`
   })
 })
 
