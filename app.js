@@ -179,11 +179,11 @@ app.post('/pointer-features', (req, res) => {
 })
 
 // Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'web/public')));
+app.use(express.static(path.join(__dirname, 'www/public')));
 
 // Route to serve the web page
 app.get('/web', (req, res) => {
-  res.sendFile(path.join(__dirname, 'web', 'index.html'))
+  res.sendFile(path.join(__dirname, 'www', 'index.html'))
 })
 
 // Start server
