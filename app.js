@@ -2,6 +2,7 @@ const bonjour = require('bonjour')()
 const ping = require('ping')
 const { exec } = require('child_process')
 const express = require('express')
+const path = require('path')
 
 // Discover services on the network
 bonjour.find({ type: 'http' }, (service) => {
@@ -148,6 +149,7 @@ app.post('/pointer-features', (req, res) => {
         case "LEFT":
         case "RIGHT":
         case "MENU":
+        case "HOME":
         case "ENTER":
         case "MUTE":
         case "BACK": {
@@ -174,6 +176,14 @@ app.post('/pointer-features', (req, res) => {
     success: true,
     msg: `Pointer event (${type}) sent to LG TV`
   })
+})
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'web/public')));
+
+// Route to serve the web page
+app.get('/web', (req, res) => {
+  res.sendFile(path.join(__dirname, 'web', 'index.html'))
 })
 
 // Start server
